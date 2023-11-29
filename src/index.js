@@ -48,6 +48,9 @@ app.post('/create-product-price', db.createProductPrice);
 app.put('/update-product-price', db.updateProductPrice);
 app.put('/delete-product-price', db.deleteProductPrice);
 
+//transaction
+app.post('/create-transaction', db.createTransdaction);
+
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);

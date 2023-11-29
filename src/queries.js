@@ -267,6 +267,62 @@ const deleteProductPrice = (request, response) => {
   });
 };
 
+//TRANSACTIONS
+
+const getBalance = async (prodId) => {
+  const res = await pool.query('SELECT get_qtybal_per_product($1)', [prodId]);
+  return res.rows[0].get_qtybal_per_product;
+};
+
+const isNotEnoughBal = async (lines) => {
+  for (let line of lines) {
+    if (await getBalance(line.prodId) <= 0 && line.modCode == 'SI') {
+      return true;
+    }
+  }
+  return false;;
+};
+
+
+
+const createTransdaction = async (request, response) => {
+
+  try {
+    const { userId = "", moduleCode = "", tradeType = "", lines = [] } = request.body;
+    const results = await pool.query('CALL create_transaction($1,$2,$3)', [userId, moduleCode, tradeType]);
+    const transId = results.rows[0].id;
+
+    if (await isNotEnoughBal(lines)) {
+      response.status(400).send({ message: 'Not enough balance!' });
+      return;
+    }
+
+    postLines(lines, transId);
+
+    //return response
+    response.status(201).send(
+      {
+        message: 'Successfully Created Transaction!',
+        data: request.body,
+        result: results
+      });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+function postLines(lines, transId) {
+  try {
+    lines.forEach(val => {
+      pool.query('CALL create_transaction_line($1,$2,$3,$4)',
+        [transId, val.prodId, val.qty, val.modCode]);
+    });
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 
 module.exports = {
   getUsers,
@@ -288,5 +344,6 @@ module.exports = {
   getProduct,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  createTransdaction
 };
