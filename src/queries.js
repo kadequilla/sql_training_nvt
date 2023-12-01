@@ -194,15 +194,14 @@ const createProduct = (request, response) => {
 };
 const updateProduct = (request, response) => {
   const id = parseInt(request.params.id);
-  const { prodId = "", groupId = "", skucode = "", barcode = "", prodname = "", unit = "", } = request.body;
+  const { groupId = "", skucode = "", barcode = "", prodname = "", unit = "", } = request.body;
 
   pool.query(
     'CALL update_product($1,$2,$3,$4,$5,$6)',
-    [id, prodId, groupId, skucode, barcode, prodname, unit],
+    [id, groupId, skucode, barcode, prodname, unit],
     (error, results) => {
       if (error) {
         response.status(400).send(error);
-        throw error;
       }
       response.status(201).send({ message: 'Successfully Updated', data: request.body });
     }
@@ -220,14 +219,24 @@ const deleteProduct = (request, response) => {
 };
 
 //product price
-const getProductPrice = (request, response) => {
-  pool.query('SELECT * FROM view_product_price_history ORDER BY product_price_id DESC', (error, results) => {
+const getProductPriceHistory = (request, response) => {
+  pool.query('SELECT * FROM view_product_price_history', (error, results) => {
     if (error) {
       throw error;
     }
     response.status(200).json(results.rows);
   });
 };
+
+const getProductPrice = (request, response) => {
+  pool.query('SELECT * FROM view_product_price', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
 const createProductPrice = (request, response) => {
   const { prodId = "", price = "", tradeType = "", } = request.body;
 
@@ -285,7 +294,7 @@ const isNotEnoughBal = async (lines) => {
 
 
 
-const createTransdaction = async (request, response) => {
+const createTransaction = async (request, response) => {
 
   try {
     const { userId = "", moduleCode = "", tradeType = "", lines = [] } = request.body;
@@ -323,6 +332,40 @@ function postLines(lines, transId) {
   }
 }
 
+const getGrList = (request, response) => {
+  pool.query('SELECT * FROM view_gr_header ORDER BY gr_id DESC', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
+const getSales = (request, response) => {
+  pool.query('SELECT * FROM view_sales_header ORDER BY sales_id DESC', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
+
+const login = async (request, response) => {
+  try {
+    const { username = "", password = "", } = request.body;
+    const result = await pool.query('SELECT * FROM func_login($1,$2)', [username, password]);
+    response.status(200).json(result.rows);
+  } catch (err) {
+    if (err?.code) {
+      response.status(401).send("User not found!");
+    } else {
+      response.status(400).send(err);
+    }
+  }
+
+};
+
 
 module.exports = {
   getUsers,
@@ -338,6 +381,7 @@ module.exports = {
   updateProductGroup,
   deleteProductGroup,
   getProductPrice,
+  getProductPriceHistory,
   createProductPrice,
   updateProductPrice,
   deleteProductPrice,
@@ -345,5 +389,8 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  createTransdaction
+  createTransaction,
+  getGrList,
+  getSales,
+  login
 };

@@ -38,18 +38,24 @@ app.delete('/delete-product-group/:id', db.deleteProductGroup);
 //product
 app.get('/products', db.getProduct);
 app.post('/create-product', db.createProduct);
-app.put('/update-product', db.updateProduct);
-app.put('/delete-product', db.deleteProduct);
+app.put('/update-product/:id', db.updateProduct);
+app.delete('/delete-product/:id', db.deleteProduct);
 
 
 //product price
 app.get('/product-prices', db.getProductPrice);
+app.get('/product-prices-history', db.getProductPriceHistory);
 app.post('/create-product-price', db.createProductPrice);
-app.put('/update-product-price', db.updateProductPrice);
-app.put('/delete-product-price', db.deleteProductPrice);
+app.put('/update-product-price/:id', db.updateProductPrice);
+app.delete('/delete-product-price/:id', db.deleteProductPrice);
 
 //transaction
-app.post('/create-transaction', db.createTransdaction);
+app.post('/create-transaction', db.createTransaction);
+app.get('/gr', db.getGrList);
+app.get('/sales', db.getSales);
+
+//login
+app.post('/login', db.login);
 
 
 app.listen(port, () => {
