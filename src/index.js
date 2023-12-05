@@ -53,6 +53,12 @@ app.delete('/delete-product-price/:id', db.deleteProductPrice);
 app.post('/create-transaction', db.createTransaction);
 app.get('/gr', db.getGrList);
 app.get('/sales', db.getSales);
+app.get('/gr-lines', db.getGrLines);
+app.get('/sales-lines', db.getSalesLines);
+app.get('/stockards-latest', db.getStockardLatest);
+app.get('/stockards-history', db.getStockardHis);
+
+
 
 //login
 app.post('/login', db.login);
