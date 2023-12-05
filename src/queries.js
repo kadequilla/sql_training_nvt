@@ -277,44 +277,49 @@ const deleteProductPrice = (request, response) => {
 };
 
 //TRANSACTIONS
-
 const getBalance = async (prodId) => {
   const res = await pool.query('SELECT get_qtybal_per_product($1)', [prodId]);
   return res.rows[0].get_qtybal_per_product;
 };
 
-const isNotEnoughBal = async (lines) => {
+const isNotEnoughBal = async (lines, moduleCode) => {
+  if (moduleCode == 'GR') return false;
+  let linesHasDisbalance = [];
+
   for (let line of lines) {
-    if (await getBalance(line.prodId) <= 0 && line.modCode == 'SI') {
-      return true;
+    let qtyBal = await getBalance(line.prodId) ?? 0;
+    if (Number(qtyBal) < Number(lines[0].qty)) {
+      linesHasDisbalance.push(true);
     }
   }
-  return false;;
+  return linesHasDisbalance.includes(true);
 };
 
-
-
 const createTransaction = async (request, response) => {
-
   try {
+    await pool.query('BEGIN');
     const { userId = "", moduleCode = "", tradeType = "", lines = [] } = request.body;
     const results = await pool.query('CALL create_transaction($1,$2,$3)', [userId, moduleCode, tradeType]);
     const transId = results.rows[0].id;
 
-    if (await isNotEnoughBal(lines)) {
+    if (await isNotEnoughBal(lines, moduleCode)) {
+      pool.query('ROLLBACK');
       response.status(400).send({ message: 'Not enough balance!' });
       return;
     }
-
+    await pool.query('COMMIT');
+    
     postLines(lines, transId);
 
-    //return response
+
     response.status(201).send(
       {
         message: 'Successfully Created Transaction!',
         data: request.body,
         result: results
       });
+
+
   } catch (err) {
     console.log(err);
   }
@@ -326,14 +331,35 @@ function postLines(lines, transId) {
       pool.query('CALL create_transaction_line($1,$2,$3,$4)',
         [transId, val.prodId, val.qty, val.modCode]);
     });
+    pool.query('COMMIT');
 
   } catch (err) {
+    pool.query('ROLLBACK');
     console.log(err);
+    response.status(400).send(err);
   }
 }
 
 const getGrList = (request, response) => {
   pool.query('SELECT * FROM view_gr_header ORDER BY gr_id DESC', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
+const getGrLines = (request, response) => {
+  pool.query('SELECT * FROM view_grlines', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
+const getSalesLines = (request, response) => {
+  pool.query('SELECT * FROM view_salesline', (error, results) => {
     if (error) {
       throw error;
     }
@@ -349,6 +375,28 @@ const getSales = (request, response) => {
     response.status(200).json(results.rows);
   });
 };
+
+
+const getStockardLatest = (request, response) => {
+
+  pool.query('SELECT * FROM view_product_stockard_balance', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
+const getStockardHis = (request, response) => {
+
+  pool.query('SELECT * FROM view_stockard_history_per_transaction', (error, results) => {
+    if (error) {
+      throw error;
+    }
+    response.status(200).json(results.rows);
+  });
+};
+
 
 
 const login = async (request, response) => {
@@ -392,5 +440,9 @@ module.exports = {
   createTransaction,
   getGrList,
   getSales,
-  login
+  login,
+  getGrLines,
+  getSalesLines,
+  getStockardLatest,
+  getStockardHis
 };
