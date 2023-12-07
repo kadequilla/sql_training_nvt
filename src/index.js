@@ -43,8 +43,6 @@ app.delete('/delete-product/:id', db.deleteProduct);
 
 
 //product price
-app.get('/product-prices', db.getProductPrice);
-app.get('/product-prices-history', db.getProductPriceHistory);
 app.post('/create-product-price', db.createProductPrice);
 app.put('/update-product-price/:id', db.updateProductPrice);
 app.delete('/delete-product-price/:id', db.deleteProductPrice);

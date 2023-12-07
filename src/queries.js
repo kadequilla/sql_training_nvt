@@ -173,7 +173,7 @@ const deleteProductGroup = (request, response) => {
 
 //product
 const getProduct = (request, response) => {
-  pool.query('SELECT * FROM view_all_product ORDER BY product_id DESC', (error, results) => {
+  pool.query('SELECT * FROM view_all_product', (error, results) => {
     if (error) {
       throw error;
     }
@@ -215,25 +215,6 @@ const deleteProduct = (request, response) => {
       response.status(400).send(error);
     }
     response.status(201).send(results.rows[0]);
-  });
-};
-
-//product price
-const getProductPriceHistory = (request, response) => {
-  pool.query('SELECT * FROM view_product_price_history', (error, results) => {
-    if (error) {
-      throw error;
-    }
-    response.status(200).json(results.rows);
-  });
-};
-
-const getProductPrice = (request, response) => {
-  pool.query('SELECT * FROM view_product_price', (error, results) => {
-    if (error) {
-      throw error;
-    }
-    response.status(200).json(results.rows);
   });
 };
 
@@ -308,7 +289,7 @@ const createTransaction = async (request, response) => {
       return;
     }
     await pool.query('COMMIT');
-    
+
     postLines(lines, transId);
 
 
@@ -328,8 +309,8 @@ const createTransaction = async (request, response) => {
 function postLines(lines, transId) {
   try {
     lines.forEach(val => {
-      pool.query('CALL create_transaction_line($1,$2,$3,$4)',
-        [transId, val.prodId, val.qty, val.modCode]);
+      pool.query('CALL create_transaction_line($1,$2,$3,$4,$5)',
+        [transId, val.prodId, val.qty, val.modCode, val.cost]);
     });
     pool.query('COMMIT');
 
@@ -428,8 +409,6 @@ module.exports = {
   createProductGroup,
   updateProductGroup,
   deleteProductGroup,
-  getProductPrice,
-  getProductPriceHistory,
   createProductPrice,
   updateProductPrice,
   deleteProductPrice,
